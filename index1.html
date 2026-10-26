@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projectile Lab 3D | ห้องทดลองโพรเจกไทล์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#12263a;--muted:#5b7083;--teal:#0e9f8e;--amber:#e8912a;--coral:#e8604c;--indigo:#4f5bd5;--green:#2fa66a;--glass:rgba(255,255,255,.68);--line:rgba(18,38,58,.12)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'IBM Plex Sans Thai',system-ui,sans-serif;color:var(--ink);min-height:100vh;background:radial-gradient(1100px 560px at 8% -10%,#d3ecf2,transparent 60%),radial-gradient(900px 500px at 100% 100%,#e4e2fa,transparent 60%),#eef4f6;font-variant-numeric:tabular-nums}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--indigo);outline-offset:2px}
+.app{max-width:1680px;margin:0 auto;padding:16px 20px 28px;display:grid;gap:14px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--indigo),var(--teal));display:grid;place-items:center;box-shadow:0 10px 24px -10px rgba(79,91,213,.7)}
+h1{font-size:20px;margin:0;font-weight:700}
+.sub{font-size:13px;color:var(--muted);margin:2px 0 0}
+.head-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.glass{background:var(--glass);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);border:1px solid rgba(255,255,255,.75);border-radius:18px;box-shadow:0 12px 32px -20px rgba(18,38,58,.5)}
+.badge{padding:8px 13px;border-radius:999px;font-size:12.5px;color:var(--muted)}
+.btn{border:1px solid var(--line);background:rgba(255,255,255,.8);padding:9px 14px;border-radius:12px;font-size:13.5px;font-weight:500;transition:background .2s,transform .2s}
+.btn:hover{background:#fff;transform:translateY(-1px)}
+.btn.main{background:linear-gradient(120deg,var(--teal),#2bb7a4);color:#fff;border:none;font-weight:600}
+.btn.main:hover{background:linear-gradient(120deg,#0c8d7d,#25a695)}
+.layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(340px,.85fr);gap:14px;align-items:start}
+.stage{display:grid;gap:12px;min-width:0;position:sticky;top:14px}
+.side{display:grid;gap:12px;min-width:0}
+.viewport{position:relative;border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,.8);box-shadow:0 24px 50px -26px rgba(18,38,58,.55);height:clamp(380px,calc(100vh - 330px),760px);background:#cfe6ef}
+#scene{position:absolute;inset:0}
+#scene canvas{display:block;touch-action:none}
+.hud{position:absolute;top:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none;max-width:70%}
+.chip{padding:7px 12px;border-radius:12px;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.8);min-width:82px}
+.chip small{display:block;font-size:11.5px;color:var(--muted)}
+.chip b{font-size:15px;font-weight:600}
+.verdict{position:absolute;top:12px;right:12px;padding:9px 14px;border-radius:12px;font-size:13.5px;font-weight:600;backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.8);max-width:40%;text-align:right;pointer-events:none}
+.verdict.ok{background:rgba(214,246,229,.86);color:#16724a}
+.verdict.miss{background:rgba(255,232,226,.88);color:#a63a28}
+.dock{position:absolute;left:12px;right:12px;bottom:12px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;pointer-events:none}
+.dock .btn{pointer-events:auto;padding:7px 12px;font-size:13px}
+.dock .group{display:flex;gap:6px}
+.hint{padding:7px 12px;border-radius:12px;font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.7);backdrop-filter:blur(12px)}
+#hotspots{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.hs{pointer-events:auto;position:absolute;left:0;top:0;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:2px solid #fff;background:var(--indigo);color:#fff;font-weight:700;font-size:13px;display:grid;place-items:center;box-shadow:0 6px 16px -4px rgba(79,91,213,.8);padding:0;will-change:transform}
+.hs::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--indigo);opacity:0;animation:ping 2.2s ease-out infinite}
+.hs.on{background:var(--teal);box-shadow:0 6px 16px -4px rgba(14,159,142,.8)}
+.hs.on::after{border-color:var(--teal);animation:none}
+.hs span{position:absolute;left:38px;top:50%;transform:translateY(-50%) translateX(-4px);white-space:nowrap;background:rgba(18,38,58,.88);color:#fff;padding:5px 10px;border-radius:9px;font-size:12.5px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.hs:hover span,.hs:focus-visible span,.hs.on span{opacity:1;transform:translateY(-50%)}
+@keyframes ping{0%{opacity:.7;transform:scale(.8)}80%,100%{opacity:0;transform:scale(1.6)}}
+.player{display:grid;grid-template-columns:auto auto auto 1fr auto auto;gap:10px;align-items:center;padding:12px 14px}
+.player input[type=range]{width:100%}
+.state{font-size:13px;color:var(--muted);min-width:96px}
+select{border:1px solid var(--line);background:rgba(255,255,255,.85);border-radius:10px;padding:7px 8px;font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{padding:12px 14px}
+.stat small{display:block;font-size:12.5px;color:var(--muted)}
+.stat b{font-size:24px;font-weight:700;line-height:1.3}
+.stat i{font-style:normal;font-size:12.5px;color:var(--muted);margin-left:4px}
+.card{padding:16px 18px}
+.card h2{font-size:15.5px;margin:0 0 12px;font-weight:700}
+.ctl{margin-bottom:16px}
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ctl label{font-size:14px;font-weight:500}
+.ctl output{font-size:14.5px;font-weight:700;color:var(--teal)}
+.ctl input[type=range]{width:100%;accent-color:var(--teal);margin:6px 0 0}
+.ctl .ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+.ctl p{margin:4px 0 0;font-size:12.5px;line-height:1.65;color:var(--muted)}
+.checks{display:grid;gap:8px;margin:4px 0 14px}
+.checks label{display:flex;align-items:center;gap:9px;font-size:13.5px}
+.checks input{width:17px;height:17px;accent-color:var(--teal)}
+.full{width:100%}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tab{border:1px solid var(--line);background:rgba(255,255,255,.7);border-radius:999px;padding:6px 12px;font-size:13px;transition:background .2s,color .2s,border-color .2s}
+.tab:hover{background:#fff}
+.tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.topic{border-radius:14px;padding:14px 16px;background:linear-gradient(135deg,rgba(79,91,213,.1),rgba(14,159,142,.1));border:1px solid rgba(79,91,213,.22);border-left:4px solid var(--teal);min-height:190px}
+.topic.pop{animation:pop .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.topic h3{margin:0 0 6px;font-size:15px}
+.topic p{margin:0 0 10px;font-size:13.5px;line-height:1.8;color:#2e4559}
+.eq{font-size:13.5px;line-height:1.85;background:rgba(255,255,255,.75);border-radius:11px;padding:9px 12px;margin-top:8px;color:#26405a;overflow-wrap:anywhere}
+.eq small{display:block;color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:2px}
+.eq em{font-style:normal;color:var(--teal);font-weight:700}
+.note{font-size:12.5px;color:var(--muted);line-height:1.7;margin-top:10px}
+@media(max-width:1020px){
+.layout{grid-template-columns:1fr}
+.stage{position:static}
+.viewport{height:clamp(340px,64vw,600px)}
+.side{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+.side .wide{grid-column:1/-1}
+}
+@media(max-width:640px){
+.app{padding:12px}
+.side{grid-template-columns:1fr}
+.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.player{grid-template-columns:auto auto auto 1fr}
+.player .state,.player select{grid-column:span 2}
+.hint{display:none}
+.verdict{max-width:55%;font-size:12.5px}
+.hud{max-width:100%;top:56px}
+.chip{min-width:70px;padding:5px 9px}
+}
+@media(prefers-reduced-motion:reduce){.hs::after{animation:none}.topic.pop{animation:none}.btn,.hs span,.tab{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<div class="brand">
+<div class="logo"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M3 21C8 4 18 4 23 21"/><circle cx="14.5" cy="7.2" r="2.2" fill="#fff" stroke="none"/></svg></div>
+<div><h1>Projectile Lab 3D</h1><p class="sub">ห้องทดลองการเคลื่อนที่แบบโพรเจกไทล์</p></div>
+</div>
+<div class="head-right">
+<div class="badge glass">g = 9.81 m/s² · ไม่คิดแรงต้านอากาศ</div>
+<button class="btn" id="resetCam" type="button">รีเซ็ตมุมกล้อง</button>
+</div>
+</header>
+<main class="layout">
+<section class="stage">
+<div class="viewport" id="viewport">
+<div id="scene"></div>
+<div class="hud">
+<div class="chip"><small>เวลา</small><b id="rT">0.00 s</b></div>
+<div class="chip"><small>ระยะแนวราบ x</small><b id="rX">0.00 m</b></div>
+<div class="chip"><small>ความสูง y</small><b id="rY">0.00 m</b></div>
+<div class="chip"><small>อัตราเร็ว v</small><b id="rV">0.00 m/s</b></div>
+</div>
+<div class="verdict" id="verdict"></div>
+<div id="hotspots"></div>
+<div class="dock">
+<div class="group">
+<button class="btn" type="button" data-cam="iso">มุมเฉียง</button>
+<button class="btn" type="button" data-cam="side">มุมด้านข้าง</button>
+<button class="btn" type="button" data-cam="top">มุมด้านบน</button>
+</div>
+<div class="hint">ลากเพื่อหมุน · คลิกขวาลากเพื่อแพน · ลูกกลิ้งเพื่อซูม</div>
+</div>
+</div>
+<div class="player glass">
+<button class="btn main" id="go" type="button">▶ ขว้างวัตถุ</button>
+<button class="btn" id="pp" type="button">Ⅱ หยุด</button>
+<button class="btn" id="rs" type="button">↺ เริ่มใหม่</button>
+<input type="range" id="scrub" min="0" max="1000" value="0" aria-label="เลื่อนดูช่วงเวลาการเคลื่อนที่">
+<span class="state" id="state">พร้อมทดลอง</span>
+<select id="rate" aria-label="ความเร็วการเล่น">
+<option value="0.25">0.25×</option>
+<option value="0.5">0.5×</option>
+<option value="1" selected>1×</option>
+<option value="2">2×</option>
+</select>
+</div>
+<div class="stats">
+<div class="stat glass"><small>ระยะตกแนวราบ R</small><b id="sR">0</b><i>m</i></div>
+<div class="stat glass"><small>ความสูงสูงสุด H</small><b id="sH">0</b><i>m</i></div>
+<div class="stat glass"><small>เวลาในอากาศ T</small><b id="sT">0</b><i>s</i></div>
+<div class="stat glass"><small>โมเมนตัมต้น p</small><b id="sP">0</b><i>kg·m/s</i></div>
+</div>
+</section>
+<aside class="side">
+<div class="card glass">
+<h2>ปรับตัวแปรการทดลอง</h2>
+<div class="ctl">
+<div class="row"><label for="force">แรงขว้าง F</label><output id="oF"></output></div>
+<input type="range" id="force" min="25" max="200" step="1" value="100">
+<div class="ends"><span>25 N</span><span>200 N</span></div>
+<p>ออกแรงกับวัตถุมวล 1 kg นาน 0.2 s จึงได้ v₀ = FΔt/m ปรับแรงแล้วความเร็วต้นเปลี่ยนตาม</p>
+</div>
+<div class="ctl">
+<div class="row"><label for="speed">ความเร็วต้น v₀</label><output id="oV"></output></div>
+<input type="range" id="speed" min="5" max="40" step="0.2" value="20">
+<div class="ends"><span>5 m/s</span><span>40 m/s</span></div>
+</div>
+<div class="ctl">
+<div class="row"><label for="angle">มุมขว้าง θ</label><output id="oA"></output></div>
+<input type="range" id="angle" min="5" max="85" step="0.5" value="45">
+<div class="ends"><span>5°</span><span>85°</span></div>
+</div>
+<div class="ctl">
+<div class="row"><label for="dist">ระยะห่างเป้าหมาย d</label><output id="oD"></output></div>
+<input type="range" id="dist" min="10" max="150" step="1" value="40">
+<div class="ends"><span>10 m</span><span>150 m</span></div>
+</div>
+<div class="checks">
+<label><input type="checkbox" id="tPath" checked>แสดงเส้นวิถี</label>
+<label><input type="checkbox" id="tVec" checked>แสดงเวกเตอร์ความเร็ว</label>
+<label><input type="checkbox" id="tPeak" checked>แสดงจุดสูงสุด</label>
+</div>
+<button class="btn full" id="solve" type="button">หามุมที่ขว้างโดนเป้าหมาย</button>
+<div class="note" id="solveNote"></div>
+</div>
+<div class="card glass">
+<h2>สำรวจหลักการ</h2>
+<div class="tabs" id="tabs"></div>
+<div class="topic pop" id="topic"></div>
+<div class="note">คลิกจุดวงกลมในฉาก 3 มิติ เพื่อเปิดคำอธิบายของตำแหน่งนั้นได้เช่นกัน</div>
+</div>
+<div class="card glass wide">
+<h2>การคำนวณด้วยค่าปัจจุบัน</h2>
+<div id="eqs"></div>
+<div class="note">จุดขว้างและจุดตกอยู่ระดับเดียวกัน วัตถุถือว่าตกโดนเป้าเมื่ออยู่ห่างจากศูนย์กลางไม่เกิน 2 m</div>
+</div>
+</aside>
+</main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(()=>{
+const G=9.81,M=1,DT=0.2,R0=0.5,K=0.3,SEG=120,RAD=8;
+const $=id=>document.getElementById(id);
+const f2=(n,d=2)=>Number(n).toFixed(d);
+const rad=d=>d*Math.PI/180;
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const st={f:100,v:20,a:45,d:40,t:0,playing:false,rate:1,auto:true,topic:'force'};
+let c,cur='iso',camTween=null,last=performance.now();
+
+function calc(){
+const r=rad(st.a),vx=st.v*Math.cos(r),vy=st.v*Math.sin(r);
+return{vx,vy,T:2*vy/G,R:vx*2*vy/G,H:vy*vy/(2*G),tp:vy/G,xp:vx*vy/G};
+}
+c=calc();
+
+const host=$('scene');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+host.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xcfe6ef);
+scene.fog=new THREE.Fog(0xcfe6ef,200,560);
+const camera=new THREE.PerspectiveCamera(45,1.6,0.5,2000);
+camera.position.set(20,30,60);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=0.08;
+controls.maxPolarAngle=Math.PI*0.495;
+controls.minDistance=6;
+controls.maxDistance=420;
+controls.screenSpacePanning=true;
+controls.addEventListener('start',()=>{st.auto=false;camTween=null});
+
+scene.add(new THREE.AmbientLight(0xffffff,0.35));
+scene.add(new THREE.HemisphereLight(0xffffff,0xb3d2c4,0.55));
+const sun=new THREE.DirectionalLight(0xfff1dc,0.95);
+sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.bias=-0.0004;
+scene.add(sun,sun.target);
+
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(1400,1400),new THREE.MeshStandardMaterial({color:0xd9eadf,roughness:1}));
+ground.rotation.x=-Math.PI/2;
+ground.receiveShadow=true;
+scene.add(ground);
+const lane=new THREE.Mesh(new THREE.BoxGeometry(280,0.04,10),new THREE.MeshStandardMaterial({color:0xf5fbf8,roughness:0.95}));
+lane.position.set(120,0.02,0);
+lane.receiveShadow=true;
+scene.add(lane);
+const grid=new THREE.GridHelper(1400,140,0xa6c4b8,0xc2d8ce);
+grid.position.y=0.05;
+grid.material.transparent=true;
+grid.material.opacity=0.55;
+scene.add(grid);
+
+function label(text){
+const cv=document.createElement('canvas');
+cv.width=160;cv.height=80;
+const x=cv.getContext('2d');
+x.font='700 38px sans-serif';
+x.textAlign='center';
+x.lineWidth=9;
+x.strokeStyle='rgba(255,255,255,.92)';
+x.strokeText(text,80,52);
+x.fillStyle='#35566b';
+x.fillText(text,80,52);
+const t=new THREE.CanvasTexture(cv);
+t.encoding=THREE.sRGBEncoding;
+const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));
+s.scale.set(8,4,1);
+return s;
+}
+for(let m=0;m<=240;m+=20){
+const s=label(m+' m');
+s.position.set(m,1,8);
+scene.add(s);
+const tick=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.06,3),new THREE.MeshBasicMaterial({color:0x7fa396}));
+tick.position.set(m,0.07,5.5);
+scene.add(tick);
+}
+
+const launcher=new THREE.Group();
+const baseMat=new THREE.MeshStandardMaterial({color:0x34486a,roughness:0.5,metalness:0.25});
+const base=new THREE.Mesh(new THREE.CylinderGeometry(1.6,2.1,0.5,32),baseMat);
+base.position.y=0.25;
+base.castShadow=true;base.receiveShadow=true;
+launcher.add(base);
+const pivot=new THREE.Group();
+pivot.position.y=R0;
+const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.26,3.2,16),new THREE.MeshStandardMaterial({color:0x4f5bd5,roughness:0.4,metalness:0.2}));
+arm.position.y=-1.7;
+arm.castShadow=true;
+const cup=new THREE.Mesh(new THREE.TorusGeometry(0.68,0.1,12,36),new THREE.MeshStandardMaterial({color:0xf2a33a,roughness:0.35,metalness:0.3}));
+cup.rotation.x=Math.PI/2;
+cup.castShadow=true;
+pivot.add(arm,cup);
+launcher.add(pivot);
+scene.add(launcher);
+
+const ball=new THREE.Mesh(new THREE.SphereGeometry(R0,36,26),new THREE.MeshStandardMaterial({color:0xe8604c,roughness:0.3,metalness:0.1}));
+ball.castShadow=true;
+scene.add(ball);
+
+const target=new THREE.Group();
+[[2,0xe8604c,0.05],[1.35,0xffffff,0.07],[0.7,0xe8604c,0.09]].forEach(([r,col,h])=>{
+const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,48),new THREE.MeshStandardMaterial({color:col,roughness:0.6}));
+m.position.y=h/2+0.04;
+m.receiveShadow=true;
+target.add(m);
+});
+const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,4.2,10),new THREE.MeshStandardMaterial({color:0x35566b}));
+pole.position.set(0,2.1,-2.6);
+pole.castShadow=true;
+const flagGeo=new THREE.PlaneGeometry(2.2,1.3);
+flagGeo.translate(1.1,0,0);
+const flag=new THREE.Mesh(flagGeo,new THREE.MeshStandardMaterial({color:0xe8604c,side:THREE.DoubleSide,roughness:0.7}));
+flag.position.set(0.07,3.5,-2.6);
+flag.castShadow=true;
+target.add(pole,flag);
+scene.add(target);
+
+const peakMark=new THREE.Mesh(new THREE.SphereGeometry(0.38,20,16),new THREE.MeshStandardMaterial({color:0xe8912a,emissive:0xe8912a,emissiveIntensity:0.35}));
+scene.add(peakMark);
+const peakLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineDashedMaterial({color:0xe8912a,dashSize:0.6,gapSize:0.4}));
+scene.add(peakLine);
+
+let tubeGeo=null;
+const faint=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshBasicMaterial({color:0x0e9f8e,transparent:true,opacity:0.28,depthWrite:false}));
+const solid=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshStandardMaterial({color:0x0e9f8e,roughness:0.4,emissive:0x0e9f8e,emissiveIntensity:0.2}));
+scene.add(faint,solid);
+
+const mkArrow=col=>{const a=new THREE.ArrowHelper(V(1,0,0),V(0,0,0),1,col,1,0.5);scene.add(a);return a};
+const aX=mkArrow(0xe8912a),aY=mkArrow(0x4f5bd5),aV=mkArrow(0x12263a),aF=mkArrow(0x2fa66a);
+
+function ballPos(t=st.t){
+return V(c.vx*t,Math.max(R0,c.vy*t-0.5*G*t*t+R0),0);
+}
+function pathPoint(f){return ballPos(f*c.T)}
+
+function rebuildPath(){
+const pts=[];
+for(let i=0;i<=80;i++)pts.push(ballPos(c.T*i/80));
+const g=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),SEG,0.14,RAD,false);
+if(tubeGeo)tubeGeo.dispose();
+tubeGeo=g;
+faint.geometry=g;
+solid.geometry=g;
+}
+function placePeak(){
+peakMark.position.set(c.xp,c.H+R0,0);
+peakLine.geometry.dispose();
+peakLine.geometry=new THREE.BufferGeometry().setFromPoints([V(c.xp,0.08,0),V(c.xp,c.H+R0,0)]);
+peakLine.computeLineDistances();
+}
+function updateLight(){
+const ext=Math.max(c.R,st.d,24)+24,cx=ext/2-10;
+sun.position.set(cx-30,90,60);
+sun.target.position.set(cx,0,0);
+const s=ext*0.7+20;
+Object.assign(sun.shadow.camera,{left:-s,right:s,top:s,bottom:-s,near:1,far:420});
+sun.shadow.camera.updateProjectionMatrix();
+}
+function setArrow(a,p,d,l){
+a.visible=l>0.15&&showVec();
+if(!a.visible)return;
+a.position.copy(p);
+a.setDirection(d);
+a.setLength(l,Math.min(1.2,l*0.35),Math.min(0.6,l*0.2));
+}
+const showVec=()=>$('tVec').checked;
+function updateArrows(){
+const p=ballPos(),vy=c.vy-G*st.t;
+setArrow(aX,p,V(1,0,0),c.vx*K);
+setArrow(aY,p,V(0,vy>=0?1:-1,0),Math.abs(vy)*K);
+setArrow(aV,p,V(c.vx,vy,0).normalize(),Math.hypot(c.vx,vy)*K);
+const idle=st.t===0&&!st.playing,d=V(Math.cos(rad(st.a)),Math.sin(rad(st.a)),0),len=Math.max(1,st.f*0.03);
+aF.visible=idle;
+if(idle){aF.position.copy(ballPos(0)).addScaledVector(d,-(len+1.2));aF.setDirection(d);aF.setLength(len,Math.min(1.2,len*0.3),0.6)}
+}
+
+const spotDefs=[['force','F','แรงขว้าง'],['velocity','v','ความเร็วต้น'],['peak','H','จุดสูงสุด'],['path','y','วิถีพาราโบลา'],['target','◎','เป้าหมาย']];
+const spotEls={},tabEls={};
+spotDefs.forEach(([k,g,name])=>{
+const b=document.createElement('button');
+b.type='button';b.className='hs';
+b.setAttribute('aria-label',name);
+b.innerHTML=g+'<span>'+name+'</span>';
+b.addEventListener('click',()=>showTopic(k,true));
+$('hotspots').appendChild(b);
+spotEls[k]=b;
+const t=document.createElement('button');
+t.type='button';t.className='tab';t.textContent=name;
+t.addEventListener('click',()=>showTopic(k,true));
+$('tabs').appendChild(t);
+tabEls[k]=t;
+});
+const tmp=new THREE.Vector3();
+function placeSpots(){
+const w=host.clientWidth,h=host.clientHeight;
+const A={force:V(0,3.8,0),velocity:ballPos().add(V(0,1.9,0)),peak:V(c.xp,c.H+R0+1.9,0),path:pathPoint(0.8).add(V(0,1.9,0)),target:V(st.d,5.8,0)};
+for(const k in A){
+tmp.copy(A[k]).project(camera);
+const vis=tmp.z<1&&Math.abs(tmp.x)<1.05&&Math.abs(tmp.y)<1.05;
+spotEls[k].style.display=vis?'':'none';
+if(vis)spotEls[k].style.transform='translate('+((tmp.x*0.5+0.5)*w)+'px,'+((-tmp.y*0.5+0.5)*h)+'px)';
+}
+}
+
+const cs=()=>Math.cos(rad(st.a)),sn=()=>Math.sin(rad(st.a));
+const topics={
+force:{t:'แรงขว้าง (F)',p:'แรงที่ผลักวัตถุในช่วงเวลาสั้น ๆ ทำให้โมเมนตัมเปลี่ยนไป ยิ่งออกแรงมาก วัตถุยิ่งเริ่มเคลื่อนที่ด้วยความเร็วต้นสูงขึ้น และไปได้ไกลขึ้นตามกำลังสองของความเร็ว',e:()=>'<div class="eq"><small>อิมพัลส์ = การเปลี่ยนโมเมนตัม</small>FΔt = mv₀<br>v₀ = '+st.f+' × '+DT+' ÷ '+M+' = <em>'+f2(st.v,1)+' m/s</em></div>'},
+velocity:{t:'ความเร็วต้น (v₀)',p:'ความเร็วต้นแยกเป็นสององค์ประกอบ แนวราบคงที่ตลอดการเคลื่อนที่ ส่วนแนวดิ่งลดลงเรื่อย ๆ ด้วยความเร่งโน้มถ่วง ลูกศรสีส้มและสีม่วงในฉากแสดงสององค์ประกอบนี้',e:()=>'<div class="eq">v<sub>x</sub> = v₀cosθ = '+f2(st.v,1)+' × '+f2(cs(),3)+' = <em>'+f2(c.vx)+' m/s</em><br>v<sub>y</sub> = v₀sinθ = '+f2(st.v,1)+' × '+f2(sn(),3)+' = <em>'+f2(c.vy)+' m/s</em></div>'},
+peak:{t:'จุดสูงสุด',p:'ที่จุดสูงสุด ความเร็วแนวดิ่งเป็นศูนย์ เหลือเพียงความเร็วแนวราบ วัตถุใช้เวลาขึ้นเท่ากับเวลาลง จึงอยู่สูงสุดที่กึ่งกลางระยะตกพอดี',e:()=>'<div class="eq">t = v<sub>y</sub>/g = <em>'+f2(c.tp)+' s</em><br>H = v₀²sin²θ / 2g = <em>'+f2(c.H)+' m</em><br>ที่ x = '+f2(c.xp)+' m</div>'},
+path:{t:'วิถีพาราโบลา',p:'แนวราบเคลื่อนที่ด้วยความเร็วคงที่ แนวดิ่งมีความเร่ง −g เมื่อรวมกันได้เส้นโค้งพาราโบลาที่สมมาตร มุม θ และ 90° − θ ให้ระยะตกเท่ากัน ลองสลับมุมสองค่านี้ดู',e:()=>'<div class="eq">x(t) = '+f2(c.vx)+' t<br>y(t) = '+f2(c.vy)+' t − '+f2(G/2,3)+' t²<br>R = v₀²sin2θ / g = <em>'+f2(c.R)+' m</em></div>'},
+target:{t:'เป้าหมาย',p:'ถ้าระยะตก R ต่างจากระยะเป้าหมาย d ไม่เกิน 2 m ถือว่าโดนเป้า ปรับแรง หรือมุม จนค่า R เท่ากับ d หรือกดปุ่มหามุมให้ระบบคำนวณมุมที่เหมาะสม',e:()=>'<div class="eq">R = <em>'+f2(c.R)+' m</em> · d = <em>'+st.d+' m</em><br>ผลต่าง R − d = '+f2(c.R-st.d,2)+' m<br>มุมคู่ที่ได้ระยะเท่ากัน = '+f2(90-st.a,1)+'°</div>'}
+};
+function showTopic(k,anim){
+st.topic=k;
+const o=topics[k],el=$('topic');
+el.innerHTML='<h3>'+o.t+'</h3><p>'+o.p+'</p>'+o.e();
+if(anim){el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}
+for(const n in tabEls){tabEls[n].classList.toggle('on',n===k);spotEls[n].classList.toggle('on',n===k)}
+}
+
+function eqHTML(){
+return '<div class="eq"><small>แรง → ความเร็วต้น</small>v₀ = FΔt/m = '+st.f+' × '+DT+' / '+M+' = <em>'+f2(st.v,1)+' m/s</em></div>'+
+'<div class="eq"><small>แยกองค์ประกอบ</small>v<sub>x</sub> = '+f2(st.v,1)+' cos'+st.a+'° = <em>'+f2(c.vx)+' m/s</em><br>v<sub>y</sub> = '+f2(st.v,1)+' sin'+st.a+'° = <em>'+f2(c.vy)+' m/s</em></div>'+
+'<div class="eq"><small>ตำแหน่งที่เวลา t</small>x = '+f2(c.vx)+' t<br>y = '+f2(c.vy)+' t − '+f2(G/2,3)+' t²</div>'+
+'<div class="eq"><small>ผลลัพธ์</small>T = 2v<sub>y</sub>/g = <em>'+f2(c.T)+' s</em><br>R = v<sub>x</sub>T = <em>'+f2(c.R)+' m</em><br>H = v<sub>y</sub>²/2g = <em>'+f2(c.H)+' m</em></div>';
+}
+
+function syncUI(){
+$('oF').textContent=st.f+' N';
+$('oV').textContent=f2(st.v,1)+' m/s';
+$('oA').textContent=f2(st.a,1)+'°';
+$('oD').textContent=st.d+' m';
+$('force').value=st.f;
+$('speed').value=st.v;
+$('angle').value=st.a;
+$('dist').value=st.d;
+$('sR').textContent=f2(c.R);
+$('sH').textContent=f2(c.H);
+$('sT').textContent=f2(c.T);
+$('sP').textContent=f2(M*st.v,1);
+$('eqs').innerHTML=eqHTML();
+const el=$('topic'),o=topics[st.topic];
+el.innerHTML='<h3>'+o.t+'</h3><p>'+o.p+'</p>'+o.e();
+updateVerdict();
+}
+function updateVerdict(){
+const e=c.R-st.d,hit=Math.abs(e)<=2,done=st.t>=c.T&&c.T>0,pre=done?'ผลการทดลอง · ':'คาดการณ์ · ';
+const v=$('verdict');
+v.className='verdict '+(hit?'ok':'miss');
+v.textContent=pre+(hit?'โดนเป้าหมาย คลาดเคลื่อน '+f2(Math.abs(e),1)+' m':e<0?'ตกก่อนถึงเป้า '+f2(-e,1)+' m':'ตกเลยเป้า '+f2(e,1)+' m');
+}
+function setState(){
+let s='พร้อมทดลอง';
+if(st.playing)s='กำลังเคลื่อนที่';
+else if(st.t>=c.T&&c.T>0)s='วัตถุตกถึงพื้นแล้ว';
+else if(st.t>0)s='หยุดชั่วคราว';
+$('state').textContent=s;
+$('pp').textContent=st.playing?'Ⅱ หยุด':'▶ เล่นต่อ';
+}
+
+function preset(name,instant){
+cur=name;
+const ext=Math.max(c.R,st.d,24)+16,cx=ext/2-8,th=Math.tan(rad(camera.fov/2));
+const fit=(ext/2)/(th*Math.max(camera.aspect,0.5))*1.08;
+let p,t;
+if(name==='side'){p=V(cx,Math.max(c.H*0.5,7),fit);t=V(cx,Math.max(c.H*0.42,3),0)}
+else if(name==='top'){p=V(cx,fit,1);t=V(cx,0,0)}
+else{p=V(cx-ext*0.28,Math.max(ext*0.3,12),fit*0.92);t=V(cx,c.H*0.3,0)}
+st.auto=true;
+camTween={fp:camera.position.clone(),ft:controls.target.clone(),tp:p,tt:t,s:performance.now(),d:instant?1:900};
+}
+
+function apply(reset){
+c=calc();
+pivot.rotation.z=-(Math.PI/2-rad(st.a));
+target.position.x=st.d;
+rebuildPath();
+placePeak();
+updateLight();
+if(reset){st.t=0;st.playing=false;$('scrub').value=0}
+syncUI();
+setState();
+if(st.auto)preset(cur,false);
+}
+
+function onForce(){st.f=Number($('force').value);st.v=Math.round(st.f*DT/M*10)/10;apply(true)}
+function onSpeed(){st.v=Number($('speed').value);st.f=Math.round(st.v*M/DT);apply(true)}
+$('force').addEventListener('input',onForce);
+$('speed').addEventListener('input',onSpeed);
+$('angle').addEventListener('input',()=>{st.a=Number($('angle').value);apply(true)});
+$('dist').addEventListener('input',()=>{st.d=Number($('dist').value);apply(true)});
+$('tPath').addEventListener('change',()=>{faint.visible=solid.visible=$('tPath').checked});
+$('tPeak').addEventListener('change',()=>{peakMark.visible=peakLine.visible=$('tPeak').checked});
+$('tVec').addEventListener('change',updateArrows);
+$('rate').addEventListener('change',()=>{st.rate=Number($('rate').value)});
+$('go').addEventListener('click',()=>{st.t=0;st.playing=true;setState();updateVerdict()});
+$('pp').addEventListener('click',()=>{
+if(st.t>=c.T)st.t=0;
+st.playing=!st.playing;
+setState();updateVerdict();
+});
+$('rs').addEventListener('click',()=>{st.t=0;st.playing=false;$('scrub').value=0;setState();updateVerdict()});
+$('scrub').addEventListener('input',()=>{st.playing=false;st.t=Number($('scrub').value)/1000*c.T;setState();updateVerdict()});
+$('resetCam').addEventListener('click',()=>preset('iso',false));
+document.querySelectorAll('[data-cam]').forEach(b=>b.addEventListener('click',()=>preset(b.dataset.cam,false)));
+$('solve').addEventListener('click',()=>{
+const s=st.d*G/(st.v*st.v),note=$('solveNote');
+if(s>1){note.textContent='ที่ความเร็ว '+f2(st.v,1)+' m/s วัตถุไปได้ไกลสุด '+f2(st.v*st.v/G,1)+' m เพิ่มแรงขว้างหรือลดระยะเป้าหมาย';return}
+let a=Math.round(Math.asin(s)*90/Math.PI*2)/2;
+if(a<5)a=Math.round((90-a)*2)/2;
+a=Math.min(85,Math.max(5,a));
+st.a=a;
+note.textContent='มุมต่ำ '+f2(a,1)+'° และมุมสูง '+f2(90-a,1)+'° ให้ระยะตกใกล้เคียงกัน';
+apply(true);
+});
+
+function size(){
+const w=host.clientWidth,h=host.clientHeight;
+if(!w||!h)return;
+renderer.setSize(w,h);
+camera.aspect=w/h;
+camera.updateProjectionMatrix();
+}
+
+function loop(now){
+const dt=Math.min((now-last)/1000,0.05);
+last=now;
+if(st.playing){
+st.t+=dt*st.rate;
+if(st.t>=c.T){st.t=c.T;st.playing=false;setState();updateVerdict()}
+$('scrub').value=c.T>0?st.t/c.T*1000:0;
+}
+const p=ballPos();
+ball.position.copy(p);
+const sp=Math.hypot(c.vx,c.vy-G*st.t);
+$('rT').textContent=f2(st.t)+' s';
+$('rX').textContent=f2(p.x)+' m';
+$('rY').textContent=f2(p.y-R0)+' m';
+$('rV').textContent=f2(sp)+' m/s';
+solid.geometry.setDrawRange(0,Math.floor(Math.min(1,st.t/c.T)*SEG)*RAD*6);
+flag.rotation.y=Math.sin(now/400)*0.18;
+updateArrows();
+if(camTween){
+const k=Math.min(1,(now-camTween.s)/camTween.d),e=1-Math.pow(1-k,3);
+camera.position.lerpVectors(camTween.fp,camTween.tp,e);
+controls.target.lerpVectors(camTween.ft,camTween.tt,e);
+if(k>=1)camTween=null;
+}
+controls.update();
+placeSpots();
+renderer.render(scene,camera);
+requestAnimationFrame(loop);
+}
+
+size();
+apply(true);
+showTopic('force',false);
+preset('iso',true);
+if(camTween){camera.position.copy(camTween.tp);controls.target.copy(camTween.tt);camTween=null}
+new ResizeObserver(()=>{size();if(st.auto)preset(cur,true)}).observe(host);
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
